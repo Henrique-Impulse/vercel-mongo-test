@@ -1,48 +1,26 @@
 /* eslint-disable */
-import mongoose from 'mongoose';
+import { MongoClient } from 'mongodb'
+
+const uri = process.env.MONGODB_URI || ''
+console.log(`MongoDB URI ->`, uri)
+if (!uri) throw new Error('MongoDB URI is not defined')
+
+let client: MongoClient
+let clientPromise: Promise<MongoClient>
 
 declare global {
-  var mongoose: {
-    conn: typeof mongoose | null;
-    promise: Promise<typeof mongoose> | null;
-  };
+  var _mongoClientPromise: Promise<MongoClient>
 }
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env');
-}
-
-const MONGODB_URI = process.env.MONGODB_URI;
-
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
-
-async function connectDB() {
-  if (cached.conn) {
-    return cached.conn;
+if (process.env.NODE_ENV === 'development') {
+  if (!global._mongoClientPromise) {
+    client = new MongoClient(uri)
+    global._mongoClientPromise = client.connect()
   }
-
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
-
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return cached;
-    });
-  }
-
-  try {
-    cached.conn = await cached.promise;
-  } catch (e) {
-    cached.promise = null;
-    throw e;
-  }
-
-  return cached.conn;
+  clientPromise = global._mongoClientPromise
+} else {
+  client = new MongoClient(uri)
+  clientPromise = client.connect()
 }
 
-export default connectDB; 
+export default clientPromise 
