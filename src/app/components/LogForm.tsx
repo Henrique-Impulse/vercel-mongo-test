@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createLog } from '@/app/actions/logs';
 
 export default function LogForm() {
   const [message, setMessage] = useState('');
@@ -12,21 +13,15 @@ export default function LogForm() {
     setStatus('Enviando...');
 
     try {
-      const response = await fetch('/api/logs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const result = await createLog('functions', {
+        message,
+        metadata: {
+          source: 'web',
+          timestamp: new Date().toISOString(),
         },
-        body: JSON.stringify({
-          message,
-          metadata: {
-            source: 'web',
-            timestamp: new Date().toISOString(),
-          },
-        }),
       });
 
-      if (response.ok) {
+      if (result.success) {
         setStatus('Log enviado com sucesso!');
         setMessage('');
       } else {
